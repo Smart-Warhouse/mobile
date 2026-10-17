@@ -1,0 +1,443 @@
+{
+  "@@locale": "ar",
+  "appTitle": "المخزن الذكي",
+  "appShort": "SW·Fleet",
+  "loginTitle": "تسجيل الدخول",
+  "loginSubtitle": "اتصل بخادم المخزن لمتابعة الأسطول",
+  "serverUrlLabel": "عنوان الخادم",
+  "serverUrlHelper": "عنوان الخادم على شبكة المخزن. على محاكي أندرويد استخدم 10.0.2.2:8000",
+  "serverUrlInvalid": "عنوان غير صالح",
+  "testConnection": "اختبار الاتصال",
+  "serverReachable": "الخادم متصل (الإصدار {version})",
+  "@serverReachable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "usernameLabel": "اسم المستخدم",
+  "passwordLabel": "كلمة المرور",
+  "requiredField": "حقل مطلوب",
+  "showPassword": "إظهار كلمة المرور",
+  "hidePassword": "إخفاء كلمة المرور",
+  "signIn": "دخول",
+  "sessionExpired": "انتهت الجلسة، سجّل الدخول مجدداً",
+  "navFleet": "الأسطول",
+  "navMap": "الخريطة",
+  "navTasks": "المهام",
+  "navInventory": "المخزون",
+  "navAlerts": "التنبيهات",
+  "stopAll": "إيقاف الكل",
+  "stopAllHold": "اضغط مطولاً ثانية واحدة",
+  "stopAllSemantics": "إيقاف الكل: اضغط مطولاً ثانية واحدة لإيقاف كل الرافعات",
+  "stopAllSent": "أُرسل أمر الإيقاف إلى الأسطول",
+  "stopAllViewer": "حساب المشاهدة لا يستطيع إيقاف الأسطول. نادِ مشغّلاً أو استخدم زر الطوارئ على الرافعة",
+  "stopAllFailed": "لم يُرسل الإيقاف! اضغط مجدداً أو استخدم زر الطوارئ على الرافعة",
+  "estopEngagedTitle": "الأسطول متوقف",
+  "estopEngagedBody": "كل الرافعات متوقفة بأمر «إيقاف الكل».",
+  "estopBy": "بواسطة {name}",
+  "@estopBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "estopAt": "الساعة {time}",
+  "@estopAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "estopRelease": "تحرير الإيقاف",
+  "estopReleaseConfirmTitle": "تحرير الإيقاف؟",
+  "estopReleaseConfirmBody": "تأكد أن الممرات آمنة وخالية من الأشخاص. ستستأنف الرافعات العمل.",
+  "estopReleased": "تم تحرير الإيقاف",
+  "estopMinimize": "إخفاء (يبقى الأسطول متوقفاً)",
+  "estopStrip": "الأسطول متوقف · اضغط للتفاصيل",
+  "estopReleaseViewer": "تحرير الإيقاف لمشغّل فقط",
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "retry": "إعادة المحاولة",
+  "close": "إغلاق",
+  "change": "تغيير",
+  "readOnlyNote": "حساب مشاهدة: للقراءة فقط",
+  "linkConnected": "مباشر",
+  "linkConnecting": "جارٍ الاتصال",
+  "linkReconnecting": "إعادة الاتصال خلال {seconds} ث",
+  "@linkReconnecting": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "linkOffline": "غير متصل",
+  "fleetTitle": "الأسطول",
+  "fleetSummary": "{online} من {total} متصلة",
+  "@fleetSummary": {
+    "placeholders": {
+      "online": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "fleetQueued": "{count} بالانتظار",
+  "@fleetQueued": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "fleetActive": "{count} نشطة",
+  "@fleetActive": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "fleetEmpty": "لا بيانات من الخادم بعد",
+  "modeIdle": "خاملة",
+  "modeBusy": "مشغولة",
+  "modeCharging": "تشحن",
+  "modePaused": "متوقفة مؤقتاً",
+  "modeManual": "يدوي",
+  "modeSafe": "وضع آمن",
+  "modeEstop": "إيقاف طوارئ",
+  "modeError": "عطل",
+  "modeOffline": "غير متصلة",
+  "modeUnknown": "غير معروف",
+  "safetyNormal": "سلامة طبيعية",
+  "safetySlow": "تباطؤ للسلامة",
+  "safetyStop": "توقف للسلامة",
+  "safetySafe": "وضع آمن",
+  "safetyEstop": "طوارئ",
+  "robotDisabled": "معطّلة (احتياطية)",
+  "robotBattery": "البطارية",
+  "robotTask": "المهمة",
+  "robotNoTask": "بلا مهمة",
+  "robotSpeed": "السرعة",
+  "robotFork": "الشوكة",
+  "robotCarrying": "تحمل البالية {id}",
+  "@robotCarrying": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "robotLastSeen": "آخر ظهور {time}",
+  "@robotLastSeen": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "speedValue": "{value} م/ث",
+  "@speedValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "mmValue": "{value} مم",
+  "@mmValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "percentValue": "{value}%",
+  "@percentValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdPause": "إيقاف مؤقت",
+  "cmdResume": "استئناف",
+  "cmdGoCharge": "إلى الشحن",
+  "cmdReset": "إعادة ضبط",
+  "cmdDrive": "قيادة يدوية",
+  "cmdSent": "أُرسل الأمر",
+  "cmdBlockedEstop": "الأوامر معطلة أثناء «إيقاف الكل»",
+  "cmdResetConfirmTitle": "إعادة ضبط {name}؟",
+  "@cmdResetConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cmdResetConfirmBody": "تأكد من زوال سبب التوقف قبل إعادة الضبط.",
+  "alertsTitle": "التنبيهات",
+  "alertsEmpty": "لا تنبيهات",
+  "filterAll": "الكل",
+  "severityInfo": "معلومة",
+  "severityWarning": "تحذير",
+  "severityCritical": "حرج",
+  "typeSafety": "سلامة",
+  "typeError": "عطل",
+  "typeInfo": "معلومات",
+  "allRobots": "كل الرافعات",
+  "fleetWide": "الأسطول",
+  "evPersonDetected": "شخص قريب من المسار",
+  "evObstacleDetected": "عائق على المسار",
+  "evTofStop": "توقف بحساس المسافة",
+  "evTofSlow": "تباطؤ بحساس المسافة",
+  "evEstopPressed": "ضُغط زر الطوارئ",
+  "evFleetEstop": "إيقاف الكل",
+  "evFleetEstopReleased": "تحرير إيقاف الكل",
+  "evWatchdogTimeout": "انقطاع المتحكم (Watchdog)",
+  "evWifiLost": "انقطاع Wi-Fi",
+  "evRobotOffline": "الرافعة انقطعت",
+  "evRobotOnline": "الرافعة اتصلت",
+  "evBatteryLow": "بطارية منخفضة",
+  "evBatteryCritical": "بطارية حرجة",
+  "evGoCharge": "ذهاب للشحن",
+  "evCharged": "اكتمل الشحن",
+  "evTaskAssigned": "أُسندت مهمة",
+  "evTaskDone": "أُنجزت مهمة",
+  "evTaskFailed": "فشلت مهمة",
+  "evPickupFailed": "فشل الالتقاط",
+  "evNavFailed": "فشل التنقل",
+  "evDeadlockResolved": "حُلّ اختناق مروري",
+  "evManualMode": "وضع يدوي",
+  "evAutoMode": "وضع آلي",
+  "evPaused": "إيقاف مؤقت",
+  "evResumed": "استئناف",
+  "evReset": "إعادة ضبط",
+  "mapTitle": "الخريطة",
+  "mapHint": "اضغط على رافعة لعرض بطاقتها",
+  "tasksTitle": "المهام",
+  "tasksMine": "مهامي",
+  "tasksAll": "الكل",
+  "tasksEmpty": "لا مهام",
+  "taskNew": "نقل بالية",
+  "statusQueued": "بالانتظار",
+  "statusAssigned": "أُسندت",
+  "statusToPickup": "في الطريق للالتقاط",
+  "statusPicking": "يلتقط",
+  "statusToDrop": "في الطريق للتسليم",
+  "statusDropping": "يُنزل",
+  "statusDone": "منجزة",
+  "statusFailed": "فشلت",
+  "statusCancelled": "ملغاة",
+  "statusUnknown": "غير معروف",
+  "taskFromTo": "من {from} إلى {to}",
+  "@taskFromTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "taskRobot": "الرافعة {robot}",
+  "@taskRobot": {
+    "placeholders": {
+      "robot": {
+        "type": "String"
+      }
+    }
+  },
+  "taskUnassigned": "لم تُسند بعد",
+  "taskPriority": "الأولوية: {priority}",
+  "@taskPriority": {
+    "placeholders": {
+      "priority": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCancel": "إلغاء المهمة",
+  "taskCancelConfirm": "إلغاء المهمة {id}؟",
+  "@taskCancelConfirm": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "taskCancelled": "أُلغيت المهمة",
+  "taskCreated": "أُنشئت المهمة {id}",
+  "@taskCreated": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "taskFailReason": "سبب الفشل: {reason}",
+  "@taskFailReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "taskPallet": "البالية {sku}",
+  "@taskPallet": {
+    "placeholders": {
+      "sku": {
+        "type": "String"
+      }
+    }
+  },
+  "newTaskTitle": "نقل بالية",
+  "stepPallet": "البالية",
+  "stepDestination": "الوجهة",
+  "stepPriority": "الأولوية",
+  "palletSearchHint": "ابحث بالـ SKU أو الاسم أو رقم ArUco",
+  "palletNotMovable": "البالية مشغولة ({status})",
+  "@palletNotMovable": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "destinationEmpty": "لا مواقع شاغرة",
+  "destinationHint": "اختر موقعاً شاغراً",
+  "locRack": "رف",
+  "locDockIn": "رصيف استلام",
+  "locDockOut": "رصيف شحن",
+  "locStaging": "منطقة تجهيز",
+  "locCharge": "محطة شحن",
+  "locUnknown": "موقع",
+  "priority1": "منخفضة",
+  "priority2": "عادية",
+  "priority3": "متوسطة",
+  "priority4": "عالية",
+  "priority5": "عاجلة",
+  "submitTask": "إنشاء المهمة",
+  "inventoryTitle": "المخزون",
+  "palletEmpty": "لا نتائج",
+  "palletStored": "مخزّنة",
+  "palletInTransit": "قيد النقل",
+  "palletReserved": "محجوزة",
+  "palletUnknown": "غير معروف",
+  "palletQty": "الكمية",
+  "palletWeight": "الوزن",
+  "weightValue": "{value} غ",
+  "@weightValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "palletAruco": "رقم ArUco",
+  "palletLocation": "الموقع",
+  "palletHistory": "سجل الحركة",
+  "palletHistoryEmpty": "لا حركات مسجلة",
+  "palletMove": "نقل هذه البالية",
+  "moveTask": "المهمة {id}",
+  "@moveTask": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "noLocation": "بلا موقع",
+  "driveTitle": "قيادة يدوية",
+  "driveSelectRobot": "اختر رافعة",
+  "driveNoRobots": "لا رافعات متصلة",
+  "driveEnterManual": "التحويل إلى يدوي",
+  "driveManualActive": "الوضع اليدوي فعّال",
+  "driveDeadman": "اضغط باستمرار للقيادة",
+  "driveDeadmanActive": "القيادة فعّالة · اترك للتوقف",
+  "driveLiftUp": "رفع",
+  "driveLiftDown": "خفض",
+  "driveJoystick": "عصا القيادة",
+  "driveCommanded": "المطلوب {value} م/ث",
+  "@driveCommanded": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "driveLimited": "بعد حد الأمان {value} م/ث",
+  "@driveLimited": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "driveSafetyNote": "حماية الأمان تبقى فعّالة. اترك الزر للتوقف فوراً.",
+  "driveExitNote": "الخروج من هذه الشاشة يعيد الرافعة إلى الوضع الآلي",
+  "driveBackToAuto": "العودة إلى الآلي",
+  "driveCmdFailed": "تعذّر إرسال أمر القيادة",
+  "settingsTitle": "الإعدادات",
+  "settingsServer": "الخادم",
+  "settingsUser": "المستخدم",
+  "settingsRole": "الدور",
+  "roleViewer": "مشاهد",
+  "roleOperator": "مشغّل",
+  "roleAdmin": "مدير",
+  "roleUnknown": "غير معروف",
+  "settingsLanguage": "اللغة",
+  "langArabic": "العربية",
+  "langEnglish": "English",
+  "signOut": "تسجيل الخروج",
+  "signOutConfirm": "تسجيل الخروج من هذا الجهاز؟",
+  "errNetwork": "تعذّر الوصول إلى الخادم. تحقق من شبكة Wi-Fi المخزن.",
+  "errInvalidCredentials": "اسم المستخدم أو كلمة المرور غير صحيحة",
+  "errUnauthorized": "انتهت الجلسة، سجّل الدخول مجدداً",
+  "errForbidden": "دورك لا يسمح بهذا الإجراء",
+  "errNotFound": "غير موجود",
+  "errTaskNotFound": "المهمة غير موجودة",
+  "errRobotNotFound": "الرافعة غير موجودة",
+  "errPalletNotFound": "البالية غير موجودة",
+  "errLocationNotFound": "الموقع غير موجود",
+  "errLocationOccupied": "الوجهة مشغولة ببالية أخرى",
+  "errPalletBusy": "البالية لديها مهمة نشطة",
+  "errFleetEstopped": "مرفوض: «إيقاف الكل» مفعّل",
+  "errInvalidState": "الحالة الحالية لا تسمح بهذا الإجراء",
+  "errRobotOffline": "الرافعة غير متصلة",
+  "errDuplicate": "القيمة مستخدمة مسبقاً",
+  "errValidation": "بيانات غير صالحة",
+  "errContract": "استجابة غير متوقعة من الخادم",
+  "errServer": "خطأ في الخادم ({status})",
+  "@errServer": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "timeJustNow": "الآن",
+  "timeSecondsAgo": "قبل {n} ث",
+  "@timeSecondsAgo": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "timeMinutesAgo": "قبل {n} د",
+  "@timeMinutesAgo": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  }
+}
