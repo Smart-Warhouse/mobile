@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../core/l10n/labels.dart';
 import '../../../core/theme/sw_tokens.dart';
+import '../../../shared/widgets/brand_symbol.dart';
 
 /// Shown while the stored session is restored.
 class SplashScreen extends StatelessWidget {
@@ -10,13 +10,12 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.sw;
     return Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(PhosphorIconsFill.truck, size: 56, color: t.lift),
+            const BrandSymbol(size: 72),
             const SizedBox(height: Sp.md),
             Text(
               context.l10n.appTitle,

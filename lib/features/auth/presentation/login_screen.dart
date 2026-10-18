@@ -8,6 +8,7 @@ import '../../../core/providers.dart';
 import '../../../core/storage/app_storage.dart';
 import '../../../core/theme/sw_tokens.dart';
 import 'providers/session_controller.dart';
+import '../../../shared/widgets/brand_symbol.dart';
 
 /// Use case 1: server address + username/password. The address and the
 /// username are remembered (shared_preferences); the JWT goes to secure
@@ -118,15 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: t.lift,
-                            borderRadius: BorderRadius.circular(Sp.radius),
-                          ),
-                          child: Icon(PhosphorIconsFill.truck, color: t.liftOn),
-                        ),
+                        const BrandSymbol(size: 48),
                         const SizedBox(width: Sp.md),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
