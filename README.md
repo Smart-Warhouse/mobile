@@ -1,11 +1,11 @@
 # SW Floor (`sw_floor`)
 
 Flutter app (Android + iOS) for the **people on the warehouse floor** of the Smart Warehouse graduation
-project («المخزن الذكي» / SW·Fleet). It talks to the central FastAPI server (`code/backend`) over REST and the
-`/ws/live` WebSocket exactly as specified in [`docs/02-api-contract.md`](../../docs/02-api-contract.md). The web
-dashboard (`code/dashboard`) is for the control room; this app is for a phone or tablet in the aisle.
+project («المخزن الذكي» / SW·Fleet). It talks to the central FastAPI server (`backend`) over REST and the
+`/ws/live` WebSocket exactly as specified in [`docs/02-api-contract.md`](https://github.com/Smart-Warhouse/docs/blob/main/02-api-contract.md). The web
+dashboard (`dashboard`) is for the control room; this app is for a phone or tablet in the aisle.
 
-Use cases ↔ requirement ids and the architecture: [`docs/09-mobile.md`](../../docs/09-mobile.md).
+Use cases ↔ requirement ids and the architecture: [`docs/09-mobile.md`](https://github.com/Smart-Warhouse/docs/blob/main/09-mobile.md).
 
 ## Run
 
@@ -40,7 +40,7 @@ There is no build-time configuration. On the sign-in screen enter:
 
 `http://` is added when missing and a trailing `/` or `/api` is dropped. The plug icon in the field calls
 `GET /api/health` to test the address before signing in. Development accounts (`admin`, `operator`, `viewer`) are
-seeded by the backend; their passwords are in `code/backend/.env.example`.
+seeded by the backend; their passwords are in `backend/.env.example`.
 
 What is remembered: the server address, the last username and the UI language (shared_preferences); the JWT
 (flutter_secure_storage: Android Keystore / iOS Keychain). The password is never stored. A 401 `unauthorized` on

@@ -1,0 +1,24 @@
+name: ci
+# Repos of the Smart-Warhouse org live side by side in one workspace folder (docs/ backend/ dashboard/ landing/
+# mobile/ robot/ ai/). Jobs that need a sibling check it out next to this repo, so relative lookups work as on a laptop.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, cache: true }
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test
