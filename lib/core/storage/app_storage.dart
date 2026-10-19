@@ -68,8 +68,12 @@ class AppPrefs {
 
   static const tokenKey = 'sw.access_token';
 
-  /// Default for a fresh install: the warehouse LAN server.
-  static const defaultServerUrl = 'http://192.168.50.2:8000';
+  /// Default for a fresh install: the warehouse LAN server, or the one baked in
+  /// with `--dart-define=SW_SERVER_URL=https://…` (e.g. the hosted demo).
+  static const defaultServerUrl = String.fromEnvironment(
+    'SW_SERVER_URL',
+    defaultValue: 'http://192.168.50.2:8000',
+  );
 
   String? get serverUrl => _p.getString(_serverUrl);
   Future<void> setServerUrl(String v) => _p.setString(_serverUrl, v);
