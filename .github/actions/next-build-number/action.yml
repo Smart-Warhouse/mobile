@@ -1,0 +1,75 @@
+name: Next build number
+description: >-
+  One build number for every store upload (the iOS workflow today; an Android release workflow can share it). Each store upload takes the next
+  number, so it is unique across both platforms and never needs a hand edit in pubspec.yaml.
+
+# How it stays unique: the number is claimed by pushing a git tag `build/<N>` that points at the commit
+# being built. A tag name can exist only once, so two workflows racing for the same number cannot both win;
+# the loser takes the next one. The tags are also a ledger: `git tag -l 'build/*'` lists every number that
+# was ever issued, and `git show build/12` says which commit it was built from.
+#
+# The first number issued is one above the larger of (the highest build/* tag, the +N in pubspec.yaml), so
+# it always clears what was uploaded by hand before this existed.
+#
+# Needs the calling job to have `permissions: contents: write` and a checkout that kept its credentials
+# (the actions/checkout default). Pushing a tag with the workflow token does not start another workflow.
+
+inputs:
+  allocate:
+    description: >-
+      'true' claims a new number (use when the build will be uploaded to a store). Anything else only reads
+      the +N from pubspec.yaml and changes nothing -- for self-tests and builds nobody uploads.
+    required: false
+    default: "false"
+
+outputs:
+  number:
+    description: The build number to pass to `flutter build --build-number`.
+    value: ${{ steps.pick.outputs.number }}
+
+runs:
+  using: composite
+  steps:
+    - id: pick
+      shell: bash
+      env:
+        ALLOCATE: ${{ inputs.allocate }}
+      run: |
+        set -euo pipefail
+
+        PUBSPEC="$(sed -n 's/^version:[[:space:]]*[^+]*+\([0-9][0-9]*\).*/\1/p' pubspec.yaml | head -n1 | tr -d '\r ')"
+        PUBSPEC="${PUBSPEC:-0}"
+
+        if [ "$ALLOCATE" != "true" ]; then
+          echo "number=$PUBSPEC" >> "$GITHUB_OUTPUT"
+          echo "Not allocating; using pubspec build number $PUBSPEC"
+          exit 0
+        fi
+
+        git fetch --quiet --force origin '+refs/tags/build/*:refs/tags/build/*' || true
+        LAST="$(git tag -l 'build/*' | sed 's#^build/##' | grep -E '^[0-9]+$' | sort -n | tail -n1 || true)"
+        LAST="${LAST:-0}"
+
+        N=$(( (LAST > PUBSPEC ? LAST : PUBSPEC) + 1 ))
+
+        for attempt in $(seq 1 25); do
+          # Taken already (by the other platform, or a run that finished a moment ago): next one.
+          if [ -n "$(git ls-remote --tags origin "refs/tags/build/$N")" ]; then
+            N=$((N + 1)); continue
+          fi
+          git tag "build/$N" "$GITHUB_SHA"
+          if git push --quiet origin "refs/tags/build/$N"; then
+            echo "number=$N" >> "$GITHUB_OUTPUT"
+            echo "Claimed build number $N for $GITHUB_SHA"
+            exit 0
+          fi
+          # The push lost a race, or was refused. Drop the local tag; if the remote now has it, move on.
+          git tag -d "build/$N" >/dev/null
+          if [ -z "$(git ls-remote --tags origin "refs/tags/build/$N")" ]; then
+            echo "::error::Could not push the build/$N tag and nobody else holds it. The job needs 'permissions: contents: write'."
+            exit 1
+          fi
+          N=$((N + 1))
+        done
+        echo "::error::Could not claim a build number after 25 attempts."
+        exit 1

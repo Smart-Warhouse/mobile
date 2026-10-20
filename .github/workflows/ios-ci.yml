@@ -1,0 +1,353 @@
+name: iOS CI
+
+# Same design as the IMMAR student app's iOS workflow (IMMAR-student/.github/workflows/ios-ci.yml), adapted to
+# SW Floor: no Firebase / push, and the only build-time configuration is the server address (SW_SERVER_URL).
+#
+# This repository is public, so GitHub's standard macOS runners cost nothing here (IMMAR is private and keeps iOS
+# manual for that reason). The workflow still runs only when the iOS side can actually change -- the ios/ folder,
+# the dependencies, or this file -- plus on demand and on release tags, because a macOS build takes ~15 minutes.
+#
+# There are two jobs, and which of them can run depends on Apple, not on us:
+#
+#   build-unsigned  Compiles the app on a hosted Mac and proves the iOS half of the codebase still builds. Needs no
+#                   Apple account and no secrets, so it works today. The .app it produces CANNOT be installed on a
+#                   phone -- Apple will not launch an unsigned binary -- it is a compile gate, nothing more.
+#
+#   build-signed    Produces a real, installable .ipa and optionally ships it to TestFlight. Skips itself cleanly
+#                   until the Apple Developer account exists and the four secrets below are set, so leaving it
+#                   unconfigured costs nothing.
+#
+# ---------------------------------------------------------------------------
+# Secrets required by build-signed (repository Settings > Secrets and variables > Actions). All four come from a
+# web page -- none of them require a Mac, which is the whole reason this workflow signs with an App Store Connect API
+# key rather than the usual .p12 certificate (exporting a .p12 needs Keychain Access, which only exists on macOS).
+#
+#   APPLE_TEAM_ID                    10 characters, e.g. A1B2C3D4E5. developer.apple.com > Membership details.
+#   APP_STORE_CONNECT_ISSUER_ID      A UUID, shared by every key on the account.
+#                                    App Store Connect > Users and Access > Integrations > App Store Connect API.
+#   APP_STORE_CONNECT_KEY_ID         10 characters, identifies one key. Same page, the row for the key you create.
+#   APP_STORE_CONNECT_PRIVATE_KEY    The FULL contents of the AuthKey_XXX.p8 file, BEGIN/END lines included. Apple
+#                                    lets you download it exactly once.
+#
+# The key needs the App Manager role to upload builds to TestFlight, and App Store Connect needs an app record with
+# the bundle id com.smartwarehouse.swFloor before the first upload.
+#
+# Optional repository VARIABLE (not a secret -- it is a public URL):
+#
+#   SW_SERVER_URL                    The fleet server the signed app talks to. Defaults to the Railway deployment.
+#                                    The `server_url` input of a manual run overrides it.
+# ---------------------------------------------------------------------------
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_testflight:
+        description: "Upload the signed build to TestFlight (requires the Apple secrets)"
+        type: boolean
+        default: false
+      server_url:
+        description: "Server the app connects to (empty = the SW_SERVER_URL variable, else the Railway backend)"
+        type: string
+        default: ""
+  push:
+    tags: ["v*"]
+    branches: [main]
+    paths: ["ios/**", "pubspec.yaml", "pubspec.lock", ".github/workflows/ios-ci.yml", ".github/actions/**"]
+  # Self-test: a pull request that touches the iOS side proves it still compiles before it is merged.
+  pull_request:
+    paths: ["ios/**", "pubspec.yaml", "pubspec.lock", ".github/workflows/ios-ci.yml", ".github/actions/**"]
+
+concurrency:
+  group: ios-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # The toolchain this app is developed and tested with (Dart 3.12, the `environment: sdk:` constraint in
+  # pubspec.yaml). Bump together.
+  FLUTTER_VERSION: "3.44.8"
+  # The live demo backend; the release APK is built against the same address.
+  DEFAULT_SERVER_URL: "https://backend-production-f8620.up.railway.app"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Runs on every trigger, with or without an Apple account.
+  # ---------------------------------------------------------------------------
+  build-unsigned:
+    name: Build unsigned (compile gate)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    # Skipped when a TestFlight upload is requested, because build-signed compiles the app itself.
+    if: ${{ !inputs.upload_to_testflight }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      # ios/Podfile is not tracked -- Flutter generates it on the first build -- so the cache is keyed on
+      # pubspec.lock, which is what actually decides which pods get pulled in.
+      - name: Cache CocoaPods
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: flutter pub get
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build unsigned iOS app
+        run: |
+          flutter build ios \
+            --release \
+            --no-codesign \
+            --dart-define=SW_SERVER_URL="$DEFAULT_SERVER_URL"
+
+      - name: Report app size
+        run: du -sh build/ios/iphoneos/Runner.app
+
+      # Uploaded so an iOS-specific failure can be inspected without another macOS run. NOT installable on a phone.
+      # continue-on-error: the artefact is a convenience; the compile result is the verdict (a full artefact quota
+      # must never fail the job).
+      - name: Upload unsigned .app
+        if: success()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sw-floor-ios-unsigned-${{ github.sha }}
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 7
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Skips itself until the Apple secrets exist. `secrets` cannot be referenced in a job-level `if`, so the guard is a
+  # step that reads them into an output.
+  # ---------------------------------------------------------------------------
+  check-signing-secrets:
+    name: Check for Apple credentials
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.probe.outputs.configured }}
+    steps:
+      - id: probe
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          if [ -n "$TEAM_ID" ] && [ -n "$ISSUER_ID" ] && [ -n "$KEY_ID" ] && [ -n "$PRIVATE_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "All four Apple secrets are present; the signed build will run."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Apple secrets are not set, so the signed build is skipped. This is expected until an Apple Developer account exists. See the header of .github/workflows/ios-ci.yml for the four values to add."
+          fi
+
+  build-signed:
+    name: Build signed IPA
+    runs-on: macos-latest
+    timeout-minutes: 60
+    # build-unsigned is intentionally NOT in `needs`: it compiles the same code, and a skipped dependency would block
+    # this job.
+    needs: [check-signing-secrets]
+    # Never on a pull request or a plain push to main. Signing with -allowProvisioningUpdates asks Apple for a fresh
+    # development certificate on every run, and an account holds only a few (IMMAR ran out after a handful of PR
+    # self-tests). Signing runs only on a manual run or a release tag.
+    if: >-
+      needs.check-signing-secrets.outputs.configured == 'true' &&
+      (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v'))
+    # contents: write only so the build-number step can push its `build/<N>` tag.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Flutter ${{ env.FLUTTER_VERSION }}
+        uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2.21.0
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Cache pub packages
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: flutter pub get
+        run: flutter pub get --enforce-lockfile
+
+      # A unique build number from the shared counter (.github/actions/next-build-number). Claimed only when this run
+      # will ship to TestFlight (an input, or a tag push); a build nobody uploads uses the +N in pubspec.yaml.
+      - name: Pick the build number
+        id: build_number
+        uses: ./.github/actions/next-build-number
+        with:
+          allocate: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.upload_to_testflight }}
+
+      - name: Pick the server address
+        id: server
+        env:
+          INPUT_URL: ${{ inputs.server_url }}
+          VAR_URL: ${{ vars.SW_SERVER_URL }}
+        run: |
+          URL="${INPUT_URL:-${VAR_URL:-$DEFAULT_SERVER_URL}}"
+          case "$URL" in
+            http://*|https://*) ;;
+            *) echo "::error::Server address '$URL' must start with http:// or https://"; exit 1 ;;
+          esac
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "The signed app will connect to $URL"
+
+      # xcodebuild and altool both look for the key at this exact path, keyed by the key id.
+      - name: Install the App Store Connect API key
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s\n' "$PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+
+      # Compiles the Dart half and runs `pod install` so the Xcode archive below has everything it needs.
+      # --no-codesign is deliberate: the archive step signs, with xcodebuild's own -allowProvisioningUpdates.
+      # Obfuscated, with the Dart symbol files split out; Generated.xcconfig carries the defines, DART_OBFUSCATION and
+      # SPLIT_DEBUG_INFO, so the archive's Flutter build phase builds the same binary. The path is absolute because
+      # that phase runs from inside ios/.
+      - name: Compile the Flutter artefacts
+        run: |
+          flutter build ios \
+            --release \
+            --no-codesign \
+            --build-number="${{ steps.build_number.outputs.number }}" \
+            --obfuscate \
+            --split-debug-info="$RUNNER_TEMP/dart-symbols" \
+            --dart-define=SW_SERVER_URL="${{ steps.server.outputs.url }}"
+
+      # -allowProvisioningUpdates is what makes a Mac unnecessary: given the API key, Xcode creates or downloads the
+      # signing certificate and the provisioning profile itself. No CODE_SIGN_IDENTITY here: a build setting passed to
+      # xcodebuild applies to every target, and forcing a distribution identity on the Pods fails the archive. The
+      # Runner target does not pin one either (see project.pbxproj), so automatic signing picks distribution here.
+      - name: Archive
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          xcodebuild archive \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic
+
+      # Written at build time rather than committed, so the team id stays a secret.
+      - name: Write ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Export IPA
+        env:
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/ipa" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+          ls -lh "$RUNNER_TEMP/ipa"
+
+      # An app-store-connect .ipa installs through TestFlight, not by tapping the file; this artefact is for archival
+      # and App Store submission. continue-on-error: archiving must never outrank shipping (TestFlight runs after this).
+      - name: Upload IPA
+        if: success()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sw-floor-ios-ipa-${{ github.sha }}
+          path: ${{ runner.temp }}/ipa/*.ipa
+          retention-days: 14
+          if-no-files-found: warn
+
+      # Without these an obfuscated stack trace cannot be read back
+      # (`flutter symbolize -i <trace> -d app.ios-arm64.symbols`). Kept longer than the IPA.
+      - name: Upload Dart symbols
+        if: success()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sw-floor-ios-dart-symbols-${{ github.sha }}
+          path: ${{ runner.temp }}/dart-symbols/
+          retention-days: 90
+          if-no-files-found: error
+
+      # Opt-in, because every upload consumes a TestFlight build number and notifies testers.
+      - name: Upload to TestFlight
+        if: inputs.upload_to_testflight
+        env:
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$(ls "$RUNNER_TEMP"/ipa/*.ipa | head -n 1)" \
+            --apiKey "$KEY_ID" \
+            --apiIssuer "$ISSUER_ID"
+
+      # A private key on a hosted runner is destroyed with the VM, but an explicit wipe keeps that from being an
+      # assumption.
+      - name: Remove the API key
+        if: always()
+        run: rm -rf ~/.appstoreconnect/private_keys

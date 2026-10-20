@@ -29,25 +29,46 @@ flutter test                    # models, envelope/errors, map transform, hold-t
 
 ## Configure the server URL
 
-There is no build-time configuration. On the sign-in screen enter:
+The server address is set **at build time**; the sign-in screen asks only for the username and password.
 
-| Where the server runs | Server address |
+```bash
+flutter build apk --release --dart-define=SW_SERVER_URL=https://backend-production-f8620.up.railway.app
+```
+
+| Where the server runs | `SW_SERVER_URL` |
 |---|---|
-| Warehouse LAN (default) | `http://192.168.50.2:8000` (the server's LAN IP) |
+| Railway (the release APK and the iOS CI) | `https://backend-production-f8620.up.railway.app` |
+| Warehouse LAN (default when no define is given) | `http://192.168.50.2:8000` (the server's LAN IP) |
 | Android emulator, server on the same PC | `http://10.0.2.2:8000` |
 | iOS simulator, server on the same Mac | `http://localhost:8000` |
 | Physical phone, server on your laptop | `http://<laptop LAN IP>:8000` (same Wi-Fi) |
 
-`http://` is added when missing and a trailing `/` or `/api` is dropped. The plug icon in the field calls
-`GET /api/health` to test the address before signing in. Development accounts (`admin`, `operator`, `viewer`) are
-seeded by the backend; their passwords are in `backend/.env.example`.
+`flutter run --dart-define=SW_SERVER_URL=...` works the same way. Development accounts (`admin`, `operator`,
+`viewer`) are seeded by the backend; their passwords are in `backend/.env.example`.
 
-What is remembered: the server address, the last username and the UI language (shared_preferences); the JWT
-(flutter_secure_storage: Android Keystore / iOS Keychain). The password is never stored. A 401 `unauthorized` on
-any call, an expired token, or WebSocket close code `4401` signs out back to this screen.
+What is remembered: the server the session belongs to, the last username and the UI language (shared_preferences);
+the JWT (flutter_secure_storage: Android Keystore / iOS Keychain). The password is never stored. A session saved for
+a different server than the one built in signs in again. A 401 `unauthorized` on any call, an expired token, or
+WebSocket close code `4401` signs out back to the sign-in screen.
 
 Plain HTTP/WS on the LAN is allowed: Android `usesCleartextTraffic="true"`, iOS ATS `NSAllowsArbitraryLoads` +
 `NSAllowsLocalNetworking` (with a local-network usage string). Tighten both if the server ever moves to HTTPS.
+
+## iOS builds (CI)
+
+`.github/workflows/ios-ci.yml`, the same design as the IMMAR student app:
+
+- **Build unsigned:** a compile gate on a hosted Mac. It runs on every change to `ios/`, the dependencies or the
+  workflow, on pull requests touching them, on `v*` tags, and on demand (Actions → iOS CI → Run workflow). It needs
+  no Apple account. The `.app` it uploads cannot be installed on a phone.
+- **Build signed:** a real `.ipa`, and optionally TestFlight. It skips itself until the repository has four secrets:
+  `APPLE_TEAM_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_PRIVATE_KEY` (an App
+  Store Connect API key; no Mac needed). It runs only on a manual run or a `v*` tag. The workflow header explains
+  where each value comes from.
+- **Server address:** the signed app connects to the `server_url` input, else the `SW_SERVER_URL` repository
+  variable, else the Railway backend.
+- **Build numbers:** each store upload claims the next build number by pushing a `build/<N>` tag
+  (`.github/actions/next-build-number`).
 
 ## Structure
 
