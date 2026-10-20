@@ -12,6 +12,9 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Export compliance: only the HTTPS/TLS the OS provides, so every TestFlight build skips the question. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>SW Floor connects to the warehouse server on the local network to supervise the forklifts.</string>
 	<key>CFBundleLocalizations</key>
