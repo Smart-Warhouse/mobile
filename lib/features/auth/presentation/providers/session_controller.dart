@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/json/json_reader.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/result.dart';
+import '../../../../core/network/server_url.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/storage/app_storage.dart';
 import '../../data/auth_repository.dart';
@@ -82,7 +83,15 @@ class SessionController extends Notifier<SessionState> {
     }
     final expired =
         expiresAt != null && DateTime.now().toUtc().isAfter(expiresAt);
-    if (baseUrl == null || token == null || user == null || expired) {
+    // The server is fixed at build time: a session saved for another address
+    // (an older build, or the LAN server) has to sign in again.
+    final otherServer =
+        baseUrl != normalizeServerUrl(AppPrefs.defaultServerUrl);
+    if (baseUrl == null ||
+        otherServer ||
+        token == null ||
+        user == null ||
+        expired) {
       if (token != null) await _secrets.delete(AppPrefs.tokenKey);
       if (ref.mounted) state = SignedOut(expired: expired);
       return;
@@ -112,10 +121,6 @@ class SessionController extends Notifier<SessionState> {
       }
     }
   }
-
-  /// `GET /api/health` against a typed address (before login).
-  Future<Result<ServerHealth>> testServer(String baseUrl) =>
-      _repo(baseUrl).health();
 
   Future<Result<User>> login({
     required String baseUrl,

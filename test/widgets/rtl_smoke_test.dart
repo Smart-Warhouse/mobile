@@ -34,9 +34,10 @@ Future<_Harness> _pumpSignedIn(
   WidgetTester tester, {
   String locale = 'ar',
   Map<String, dynamic> user = userJson,
+  String serverUrl = AppPrefs.defaultServerUrl,
 }) async {
   SharedPreferences.setMockInitialValues({
-    'sw.server_url': 'http://wh.test:8000',
+    'sw.server_url': serverUrl,
     'sw.user': jsonEncode(user),
     'sw.locale': locale,
   });
@@ -193,6 +194,14 @@ void main() {
     await _settle(tester);
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('انتهت الجلسة، سجّل الدخول مجدداً'), findsOneWidget);
+    await _teardown(tester);
+  });
+
+  testWidgets('a session saved for another server opens the login screen, '
+      'which asks only for username and password', (tester) async {
+    await _pumpSignedIn(tester, serverUrl: 'http://wh.test:8000');
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.byType(TextFormField), findsNWidgets(2));
     await _teardown(tester);
   });
 

@@ -10,8 +10,9 @@ import '../../../core/theme/sw_tokens.dart';
 import 'providers/session_controller.dart';
 import '../../../shared/widgets/brand_symbol.dart';
 
-/// Use case 1: server address + username/password. The address and the
-/// username are remembered (shared_preferences); the JWT goes to secure
+/// Use case 1: username + password. The server address is fixed at build time
+/// (`--dart-define=SW_SERVER_URL=…`, see [AppPrefs.defaultServerUrl]); the
+/// username is remembered (shared_preferences); the JWT goes to secure
 /// storage; the password is never stored.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,65 +23,33 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  late final TextEditingController _server;
   late final TextEditingController _user;
   final _password = TextEditingController();
   bool _obscure = true;
   bool _busy = false;
   String? _error;
-  String? _info;
 
   @override
   void initState() {
     super.initState();
     final prefs = ref.read(appPrefsProvider);
-    _server = TextEditingController(
-      text: prefs.serverUrl ?? AppPrefs.defaultServerUrl,
-    );
     _user = TextEditingController(text: prefs.lastUsername ?? '');
   }
 
   @override
   void dispose() {
-    _server.dispose();
     _user.dispose();
     _password.dispose();
     super.dispose();
   }
 
-  Future<void> _test() async {
-    final url = normalizeServerUrl(_server.text);
-    final l10n = context.l10n;
-    if (url == null) {
-      setState(() => _error = l10n.serverUrlInvalid);
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _error = null;
-      _info = null;
-    });
-    final res = await ref
-        .read(sessionControllerProvider.notifier)
-        .testServer(url);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      res.when(
-        ok: (h) => _info = l10n.serverReachable(h.version ?? '?'),
-        err: (f) => _error = l10n.failure(f),
-      );
-    });
-  }
-
   Future<void> _submit() async {
     if (!(_form.currentState?.validate() ?? false)) return;
-    final url = normalizeServerUrl(_server.text)!;
+    final url = normalizeServerUrl(AppPrefs.defaultServerUrl)!;
     final l10n = context.l10n;
     setState(() {
       _busy = true;
       _error = null;
-      _info = null;
     });
     final res = await ref
         .read(sessionControllerProvider.notifier)
@@ -145,27 +114,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                     const SizedBox(height: Sp.xl),
                     TextFormField(
-                      controller: _server,
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                      textDirection: TextDirection.ltr,
-                      decoration: InputDecoration(
-                        labelText: l10n.serverUrlLabel,
-                        helperText: l10n.serverUrlHelper,
-                        helperMaxLines: 3,
-                        prefixIcon: const Icon(PhosphorIconsRegular.hardDrives),
-                        suffixIcon: IconButton(
-                          tooltip: l10n.testConnection,
-                          icon: const Icon(PhosphorIconsRegular.plugsConnected),
-                          onPressed: _busy ? null : _test,
-                        ),
-                      ),
-                      validator: (v) => normalizeServerUrl(v ?? '') == null
-                          ? l10n.serverUrlInvalid
-                          : null,
-                    ),
-                    const SizedBox(height: Sp.lg),
-                    TextFormField(
                       controller: _user,
                       autocorrect: false,
                       textInputAction: TextInputAction.next,
@@ -205,10 +153,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     if (_error != null) ...[
                       const SizedBox(height: Sp.md),
                       _Notice(text: _error!, color: t.danger),
-                    ],
-                    if (_info != null) ...[
-                      const SizedBox(height: Sp.md),
-                      _Notice(text: _info!, color: t.success),
                     ],
                     const SizedBox(height: Sp.xl),
                     FilledButton(
